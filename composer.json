@@ -1,0 +1,15 @@
+{
+    "name": "patrmehr/adventofcode2023",
+    "description": "Solutions for Advent of code 2023",
+    "type": "project",
+    "require": {
+        "vlucas/phpdotenv": "*",
+        "ext-curl": "*",
+        "symfony/console": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PatrMehr\\AdventOfCode2023\\": "src/"
+        }
+    }
+}
