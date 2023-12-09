@@ -2,9 +2,10 @@
 
 namespace PatrMehr\AdventOfCode2023\Day02;
 
+use PatrMehr\AdventOfCode2023\AbstractSolver;
 use PatrMehr\AdventOfCode2023\Result\SolverResult;
 
-class Solver
+class Solver extends AbstractSolver
 {
     public static function solve(string $input) : SolverResult
     {
@@ -14,14 +15,7 @@ class Solver
             'blue' => 14,
         ];
 
-        $ans1 = 0;
-        $ans2 = 0;
-        foreach (preg_split('/\r\n|\r|\n/', $input) as $item) {
-
-            if (!$item) {
-                continue;
-            }
-
+        foreach (self::parseInputToLinesArray($input) as $item) {
             preg_match('/[^:]*/', $item, $matches);
             $gameId = substr($matches[0], 5);
 
@@ -54,12 +48,12 @@ class Solver
             }, true);
 
             if ($isPossible) {
-                $ans1 += (int)$gameId;
+                self::$ans1 += (int)$gameId;
             }
 
-            $ans2 += $gameSet['red'] * $gameSet['green'] * $gameSet['blue'];
+            self::$ans2 += $gameSet['red'] * $gameSet['green'] * $gameSet['blue'];
         }
 
-        return new SolverResult($ans1, $ans2);
+        return new SolverResult(self::$ans1, self::$ans2);
     }
 }
