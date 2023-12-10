@@ -4,6 +4,7 @@ namespace PatrMehr\AdventOfCode2023\Day05;
 
 use PatrMehr\AdventOfCode2023\AbstractSolver;
 use PatrMehr\AdventOfCode2023\Result\SolverResult;
+use Symfony\Component\Console\Helper\ProgressBar;
 
 class Solver extends AbstractSolver
 {
@@ -12,26 +13,21 @@ class Solver extends AbstractSolver
         [$seeds, $rules] = self::parseInput(trim($input));
 
         // Part 1
-        $seedParameter = self::invokeRules($seeds, $rules);
+        $seedParameter = self::applyRules($seeds, $rules);
         $locations = array_map(function ($seedParams) {
             return array_pop($seedParams);
         }, $seedParameter);
 
         //Part 2
-        //TODO: Fix out of memory error
-        $seedParameter2 = [];
         $seedChunks = array_chunk($seeds, 2);
+
         foreach ($seedChunks as $chunk) {
-            for ($seedCount = $chunk[0]; $seedCount < $chunk[0] + $chunk[1]; $seedCount++) {
-                $seedParameter2[] = self::invokeRules($seeds, $rules);
-            }
+            $range = ['start' => $chunk[0], 'end' => $chunk[0] + $chunk[1] - 1];
+            $minLocations[] = min(array_column(self::applyRulesToRange($range, $rules), 'start'));
         }
-        $locations2 = array_map(function ($seedParams) {
-            return array_pop($seedParams);
-        }, $seedParameter2);
 
         self::$ans1 = min($locations);
-        self::$ans2 = min($locations2);
+        self::$ans2 = min($minLocations);
 
         return parent::solve($input);
     }
@@ -61,7 +57,65 @@ class Solver extends AbstractSolver
         return [$parsedSeeds, $rules];
     }
 
-    protected static function invokeRules($seeds, $rules)
+    protected static function applyRulesToRange($startRange, $rules)
+    {
+        $ranges[] = $startRange;
+
+        foreach ($rules as $rule) {
+            $newRanges = [];
+            foreach ($rule as $step) {
+                $ruleRange = ['start' => $step['source'], 'end' => $step['source'] + $step['length'] - 1];
+
+                for ($count = 0; $count < count($ranges); $count++) {
+                    $range = $ranges[$count];
+
+                    $start = max($range['start'], $ruleRange['start']);
+                    $end = min($range['end'], $ruleRange['end']);
+
+                    if ($start <= $end) {
+                        array_splice($ranges, $count--, 1);
+                        $intersect = ['start' => $start, 'end' => $end];
+                        $newRanges[] = ['start' => $intersect['start'] + $step['offset'], 'end' => $intersect['end'] + $step['offset']];
+
+                        $diffs = self::compareRanges($range, $intersect);
+
+                        if ($diffs) {
+                            $ranges = array_merge($ranges, $diffs);
+                        }
+                    }
+                }
+            }
+            $ranges = array_merge($ranges, $newRanges);
+        }
+
+        return $ranges;
+    }
+
+    protected static function compareRanges($range_one, $range_two)
+    {
+        if ($range_one['start'] > $range_two['start']) {
+            return [$range_one];
+        }
+
+        if ($range_one['end'] < $range_two['end']) {
+           return [$range_one];
+        }
+
+        $diffStart = max($range_one['start'], $range_two['start']);
+        $diffEnd = min($range_one['end'], $range_two['end']);
+
+        if ($range_one['start'] < $diffStart) {
+            $ranges[] = ['start' => $range_one['start'], 'end' => $diffStart - 1];
+        }
+
+        if ($range_one['end'] > $diffEnd) {
+            $ranges[] = ['start' => $diffEnd + 1, 'end' => $range_one['end']];
+        }
+
+        return $ranges ?? null;
+    }
+
+    protected static function applyRules($seeds, $rules)
     {
         $seedParameter = [];
         foreach ($seeds as $seed) {
